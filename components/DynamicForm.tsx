@@ -101,17 +101,53 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit, roll
                       {field.label}
                       {field.required && <span className="text-red-500 ml-1">*</span>}
                     </label>
-                    <input
-                      type={field.type}
-                      id={field.fieldId}
-                      value={formData[field.fieldId] || ''}
-                      onChange={(e) => handleChange(field.fieldId, e.target.value)}
-                      className={`mt-1 block w-full px-4 py-3 border ${
-                        errors[field.fieldId] ? 'border-red-300' : 'border-gray-300'
-                      } rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out`}
-                      placeholder={field.placeholder}
-                      required={field.required}
-                    />
+                    {field.type === 'dropdown' ? (
+                      <select
+                        id={field.fieldId}
+                        value={formData[field.fieldId] || ''}
+                        onChange={(e) => handleChange(field.fieldId, e.target.value)}
+                        className={`mt-1 block w-full px-4 py-3 border ${
+                          errors[field.fieldId] ? 'border-red-300' : 'border-gray-300'
+                        } rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out`}
+                        required={field.required}
+                      >
+                        <option value="">Select {field.label}</option>
+                        {field.options?.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : field.type === 'radio' ? (
+                      <select
+                        id={field.fieldId}
+                        value={formData[field.fieldId] || ''}
+                        onChange={(e) => handleChange(field.fieldId, e.target.value)}
+                        className={`mt-1 block w-full px-4 py-3 border ${
+                          errors[field.fieldId] ? 'border-red-300' : 'border-gray-300'
+                        } rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out`}
+                        required={field.required}
+                      >
+                        <option value="">Select {field.label}</option>
+                        {field.options?.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type}
+                        id={field.fieldId}
+                        value={formData[field.fieldId] || ''}
+                        onChange={(e) => handleChange(field.fieldId, e.target.value)}
+                        className={`mt-1 block w-full px-4 py-3 border ${
+                          errors[field.fieldId] ? 'border-red-300' : 'border-gray-300'
+                        } rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out`}
+                        placeholder={field.placeholder}
+                        required={field.required}
+                      />
+                    )}
                     {errors[field.fieldId] && (
                       <p className="text-sm text-red-600">{errors[field.fieldId]}</p>
                     )}
