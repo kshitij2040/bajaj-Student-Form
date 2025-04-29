@@ -1,173 +1,153 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { FormResponse, FormSection, FormField } from '../types/form';
+import { FormStructure, FormData, FormField } from '../types/form';
 
 interface DynamicFormProps {
-  formData: FormResponse;
+  formStructure: FormStructure;
+  onSubmit: (data: FormData) => void;
 }
 
-const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
+const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit }) => {
   const [currentSection, setCurrentSection] = useState(0);
-  const { register, handleSubmit, formState: { errors }, trigger } = useForm();
-  const sections = formData.form.sections;
+  const [formData, setFormData] = useState<FormData>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const renderField = (field: FormField) => {
-    const commonProps = {
-      ...register(field.fieldId, {
-        required: field.required,
-        minLength: field.minLength,
-        maxLength: field.maxLength,
-      }),
-      'data-testid': field.dataTestId,
-      className: 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-    };
+  if (!formStructure) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading form...</p>
+        </div>
+      </div>
+    );
+  }
 
-    switch (field.type) {
-      case 'text':
-      case 'tel':
-      case 'email':
-      case 'date':
-        return (
-          <input
-            type={field.type}
-            placeholder={field.placeholder}
-            {...commonProps}
-          />
-        );
-      case 'textarea':
-        return (
-          <textarea
-            placeholder={field.placeholder}
-            {...commonProps}
-          />
-        );
-      case 'dropdown':
-        return (
-          <select {...commonProps}>
-            <option value="">Select an option</option>
-            {field.options?.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        );
-      case 'radio':
-        return (
-          <div className="space-y-2">
-            {field.options?.map(option => (
-              <label key={option.value} className="flex items-center">
-                <input
-                  type="radio"
-                  value={option.value}
-                  {...commonProps}
-                  className="mr-2"
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-        );
-      case 'checkbox':
-        return (
-          <div className="space-y-2">
-            {field.options?.map(option => (
-              <label key={option.value} className="flex items-center">
-                <input
-                  type="checkbox"
-                  value={option.value}
-                  {...commonProps}
-                  className="mr-2"
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-        );
-      default:
-        return null;
+  const validateSection = (section: FormStructure['sections'][0]) => {
+    const newErrors: Record<string, string> = {};
+    section.fields.forEach((field: FormField) => {
+      const value = formData[field.id];
+      if (field.required && !value) {
+        newErrors[field.id] = `${field.label} is required`;
+      } else if (field.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        newErrors[field.id] = 'Please enter a valid email address';
+      } else if (field.type === 'tel' && value && !/^\+?[\d\s-]{10,}$/.test(value)) {
+        newErrors[field.id] = 'Please enter a valid phone number';
+      }
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (fieldId: string, value: string) => {
+    setFormData((prev: FormData) => ({ ...prev, [fieldId]: value }));
+    if (errors[fieldId]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldId];
+        return newErrors;
+      });
     }
   };
 
-  const validateCurrentSection = async () => {
-    const currentFields = sections[currentSection].fields.map(field => field.fieldId);
-    const isValid = await trigger(currentFields);
-    return isValid;
-  };
-
-  const handleNext = async () => {
-    const isValid = await validateCurrentSection();
-    if (isValid && currentSection < sections.length - 1) {
+  const handleNext = () => {
+    if (validateSection(formStructure.sections[currentSection])) {
       setCurrentSection(prev => prev + 1);
     }
   };
 
-  const handlePrev = () => {
-    if (currentSection > 0) {
-      setCurrentSection(prev => prev - 1);
+  const handlePrevious = () => {
+    setCurrentSection(prev => prev - 1);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateSection(formStructure.sections[currentSection])) {
+      onSubmit(formData);
     }
   };
 
-  const onSubmit = (data: any) => {
-    console.log('Form Data:', data);
-  };
+  const currentSectionData = formStructure.sections[currentSection];
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">{formData.form.formTitle}</h2>
-      
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold mb-2">{sections[currentSection].title}</h3>
-          <p className="text-gray-600 mb-4">{sections[currentSection].description}</p>
-          
-          <div className="space-y-4">
-            {sections[currentSection].fields.map(field => (
-              <div key={field.fieldId} className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  {field.label}
-                  {field.required && <span className="text-red-500 ml-1">*</span>}
-                </label>
-                {renderField(field)}
-                {errors[field.fieldId] && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {field.validation?.message || 'This field is required'}
-                  </p>
-                )}
-              </div>
-            ))}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-2xl">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Progress Bar */}
+          <div className="px-6 pt-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">{formStructure.title}</h2>
+              <span className="text-sm text-gray-500">
+                Section {currentSection + 1} of {formStructure.sections.length}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                style={{ width: `${((currentSection + 1) / formStructure.sections.length) * 100}%` }}
+              ></div>
+            </div>
           </div>
-        </div>
 
-        <div className="flex justify-between">
-          {currentSection > 0 && (
-            <button
-              type="button"
-              onClick={handlePrev}
-              className="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
-            >
-              Previous
-            </button>
-          )}
-          
-          {currentSection < sections.length - 1 ? (
-            <button
-              type="button"
-              onClick={handleNext}
-              className="ml-auto bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              type="submit"
-              className="ml-auto bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-            >
-              Submit
-            </button>
-          )}
+          <form onSubmit={handleSubmit} className="p-6">
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-gray-900">{currentSectionData.title}</h3>
+              <p className="text-sm text-gray-500">{currentSectionData.description}</p>
+
+              <div className="space-y-4">
+                {currentSectionData.fields.map((field: FormField) => (
+                  <div key={field.id} className="space-y-2">
+                    <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
+                      {field.label}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+                    <input
+                      type={field.type}
+                      id={field.id}
+                      value={formData[field.id] || ''}
+                      onChange={(e) => handleChange(field.id, e.target.value)}
+                      className={`mt-1 block w-full px-4 py-3 border ${
+                        errors[field.id] ? 'border-red-300' : 'border-gray-300'
+                      } rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out`}
+                      placeholder={field.placeholder}
+                      required={field.required}
+                    />
+                    {errors[field.id] && (
+                      <p className="text-sm text-red-600">{errors[field.id]}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-between">
+              <button
+                type="button"
+                onClick={handlePrevious}
+                disabled={currentSection === 0}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              {currentSection < formStructure.sections.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  className="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                  Submit
+                </button>
+              )}
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 };
