@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Login from '@/components/Login';
 import DynamicForm from '@/components/DynamicForm';
 import { getForm } from '@/services/api';
-import { FormResponse } from '@/types/form';
+import { FormResponse, FormData } from '@/types/form';
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -51,7 +51,7 @@ export default function Home() {
     localStorage.removeItem('rollNumber');
   };
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: FormData) => {
     console.log('Form submitted with data:', data);
     // You can add additional handling here if needed
   };

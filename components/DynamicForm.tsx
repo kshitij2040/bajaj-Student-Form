@@ -7,7 +7,7 @@ interface DynamicFormProps {
   rollNumber: string;
 }
 
-const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit, rollNumber }) => {
+const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit }) => {
   const [currentSection, setCurrentSection] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
