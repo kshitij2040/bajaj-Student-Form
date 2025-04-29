@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { FormStructure, FormData, FormField } from '../types/form';
+import { FormStructure, FormData, FormField, FormSection } from '../types/form';
 
 interface DynamicFormProps {
   formStructure: FormStructure;
   onSubmit: (data: FormData) => void;
+  rollNumber: string;
 }
 
-const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit }) => {
+const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit, rollNumber }) => {
   const [currentSection, setCurrentSection] = useState(0);
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -22,16 +23,16 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit }) =>
     );
   }
 
-  const validateSection = (section: FormStructure['sections'][0]) => {
+  const validateSection = (section: FormSection) => {
     const newErrors: Record<string, string> = {};
     section.fields.forEach((field: FormField) => {
-      const value = formData[field.id];
+      const value = formData[field.fieldId];
       if (field.required && !value) {
-        newErrors[field.id] = `${field.label} is required`;
+        newErrors[field.fieldId] = `${field.label} is required`;
       } else if (field.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        newErrors[field.id] = 'Please enter a valid email address';
+        newErrors[field.fieldId] = 'Please enter a valid email address';
       } else if (field.type === 'tel' && value && !/^\+?[\d\s-]{10,}$/.test(value)) {
-        newErrors[field.id] = 'Please enter a valid phone number';
+        newErrors[field.fieldId] = 'Please enter a valid phone number';
       }
     });
     setErrors(newErrors);
@@ -75,7 +76,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit }) =>
           {/* Progress Bar */}
           <div className="px-6 pt-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{formStructure.title}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{formStructure.formTitle}</h2>
               <span className="text-sm text-gray-500">
                 Section {currentSection + 1} of {formStructure.sections.length}
               </span>
@@ -95,24 +96,24 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formStructure, onSubmit }) =>
 
               <div className="space-y-4">
                 {currentSectionData.fields.map((field: FormField) => (
-                  <div key={field.id} className="space-y-2">
-                    <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
+                  <div key={field.fieldId} className="space-y-2">
+                    <label htmlFor={field.fieldId} className="block text-sm font-medium text-gray-700">
                       {field.label}
                       {field.required && <span className="text-red-500 ml-1">*</span>}
                     </label>
                     <input
                       type={field.type}
-                      id={field.id}
-                      value={formData[field.id] || ''}
-                      onChange={(e) => handleChange(field.id, e.target.value)}
+                      id={field.fieldId}
+                      value={formData[field.fieldId] || ''}
+                      onChange={(e) => handleChange(field.fieldId, e.target.value)}
                       className={`mt-1 block w-full px-4 py-3 border ${
-                        errors[field.id] ? 'border-red-300' : 'border-gray-300'
+                        errors[field.fieldId] ? 'border-red-300' : 'border-gray-300'
                       } rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out`}
                       placeholder={field.placeholder}
                       required={field.required}
                     />
-                    {errors[field.id] && (
-                      <p className="text-sm text-red-600">{errors[field.id]}</p>
+                    {errors[field.fieldId] && (
+                      <p className="text-sm text-red-600">{errors[field.fieldId]}</p>
                     )}
                   </div>
                 ))}
