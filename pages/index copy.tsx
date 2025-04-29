@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import Login from '@/components/Login';
-import DynamicForm from '@/components/DynamicForm';
-import { getForm } from '@/services/api';
-import { FormResponse } from '@/types/form';
+import Login from '../components/Login';
+import DynamicForm from '../components/DynamicForm';
+import { getForm } from '../services/api';
+import { FormResponse } from '../types/form';
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
